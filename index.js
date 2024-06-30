@@ -237,6 +237,22 @@ Combo4 : 163,142,196
       parsedData.Events[0] = `0,0,"${bgNewName}",0,0`;
     }
 
+    // videos
+// [Events]
+// //Background and Video events
+// Video,0,"shoulder bouilder bg.mp4"
+
+    for (let i = 0; i < parsedData.Events.length; i++) {
+      if (parsedData.Events[i].includes("Video")) {
+        const videoFile = parsedData.Events[i].split(',')[2].replace(/"/g, '');
+        const videoExt = videoFile.split('.').pop();
+        const videoNewName = `${Date.now() + Math.floor(Math.random() * 1000)}.${videoExt}`;
+        fs.copyFileSync(path.join(data.osuPath, 'Songs', `${file.folder}`, videoFile), path.join(`${data.osuPath}\\Songs\\${localData.mapsetId} ${localData.mapsetName}`, videoNewName));
+        parsedData.Events[i] = `Video,0,"${videoNewName}"`;
+      }
+    }
+
+
     fs.writeFileSync(path.join(`${data.osuPath}\\Songs\\${localData.mapsetId} ${localData.mapsetName}`, file.diff.replace(`[${file.diffName}]`, `[${file.newDiff}]`),), `
 osu file format v14
 
