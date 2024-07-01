@@ -22,27 +22,68 @@ const localData = {
   mapsetBackground: '',
 };
 
+let backupId = Date.now() + Math.floor(Math.random() * 1000);
+
+if (!fs.existsSync('backup')) {
+  fs.mkdirSync('backup');
+}
+
+async function saveBackup() {
+  fs.writeFileSync(path.join('backup', `backup-${backupId}.json`), JSON.stringify(localData));
+}
+
+// load data
 if (fs.existsSync(filePath)) {
   const fileData = fs.readFileSync(filePath);
   Object.assign(data, JSON.parse(fileData));
 }
 
-loop();
+
+if(data.osuPath === '') {
+  rl.question('Enter your osu! path: ', (answer) => {
+    data.osuPath = answer;
+    fs.writeFileSync(filePath, JSON.stringify(data));
+    console.log('osu! path saved');
+  });
+} else {
+  rl.question("Load backup? Press enter if no, or enter the backup ID (excluding `backup-`, just the number.): ", (answer) => {
+    if (answer !== "") {
+      const backupFile = fs.readFileSync(path.join('backup', `backup-${answer}.json`));
+      backupId = answer;
+      Object.assign(localData, JSON.parse(backupFile));
+      console.log('Backup loaded');
+      loop();
+    } else {
+      loop();
+    }
+  });
+}
 
 async function loop() {
-  if(data.osuPath === '') {
-    rl.question('Enter your osu! path: ', (answer) => {
-      data.osuPath = answer;
-      fs.writeFileSync(filePath, JSON.stringify(data));
-      console.log('osu! path saved');
-    });
-  }
 
-  rl.question("Choose a mapset name: ", (answer) => {
-    localData.mapsetName = answer;
-    localData.mapsetPath = path.join(data.osuPath, 'Songs', answer);
-    newBeatmap();
-  });
+  if (localData.mapsetName === '') { // shouldn't be this if we loaded a backup!!
+    rl.question("Choose a mapset name: ", (answer) => {
+      localData.mapsetName = answer;
+      localData.mapsetPath = path.join(data.osuPath, 'Songs', answer);
+      saveBackup();
+    });
+  } else {
+    if (localData.mapsetFiles.length !== 0) {
+      rl.question("You have loaded a backup. Do you want to add more beatmaps or build the map and exit? (y/n) ", (answer) => {
+        if (answer === 'y') {
+          newBeatmap();
+          saveBackup();
+        } else {
+          console.log(`Completed adding beatmaps to ${localData.mapsetName}! Now creating the mapset folder.`);
+          saveBackup();
+          createMapset();
+          rl.close();
+        }
+      });
+    } else {
+      newBeatmap();
+    }
+  }
 
   function newBeatmap() {
     rl.question("Enter the beatmapset ID: (can be anything in your osu! songs folder: its the number at the start of the folder name - example: 93523 Tatsh - IMAGE -MATERIAL- Version 0) ", (answer) => {
@@ -86,11 +127,13 @@ async function loop() {
             diffName,
             newDiff
           });
+          saveBackup();
           rl.question("Added beatmap. Add another? (y/n) ", (answer) => {
             if (answer === 'y') {
               newBeatmap();
             } else {
               console.log(`Completed adding beatmaps to ${localData.mapsetName}! Now creating the mapset folder.`);
+              saveBackup();
               createMapset();
               rl.close();
             }
