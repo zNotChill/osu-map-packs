@@ -66,6 +66,7 @@ async function loop() {
       localData.mapsetName = answer;
       localData.mapsetPath = path.join(data.osuPath, 'Songs', answer);
       saveBackup();
+      newBeatmap();
     });
   } else {
     if (localData.mapsetFiles.length !== 0) {
